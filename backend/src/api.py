@@ -11,6 +11,11 @@ app = Flask(__name__)
 setup_db(app)
 CORS(app)
 
+
+@app.route('/')
+def index():
+    return 'Welcome to Coffee-Shop App'
+
 '''
 @TODO uncomment the following line to initialize the datbase
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
