@@ -29,7 +29,6 @@ db_drop_and_create_all()
     !!NOTE you can change the database_filename variable to have multiple verisons of a database
 '''
 def db_drop_and_create_all():
-    print('create running')
     db.drop_all()
     db.create_all()
 
@@ -45,14 +44,13 @@ class Drink(db.Model):
     title = Column(String(80), unique=True)
     # the ingredients blob - this stores a lazy json blob
     # the required datatype is [{'color': string, 'name':string, 'parts':number}]
-    recipe =  Column(ARRAY(db.String(), nullable=False)
-
+    recipe =  Column(String(180), nullable=False)
+    
     '''
     short()
         short form representation of the Drink model
     '''
     def short(self):
-        print(json.loads(self.recipe))
         short_recipe = [{'color': r['color'], 'parts': r['parts']} for r in json.loads(self.recipe)]
         return {
             'id': self.id,

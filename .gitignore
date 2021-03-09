@@ -5,6 +5,7 @@ test.db
 node_modules
 env
 test_dev.py
+test.py
 # OS generated files #
 ######################
 .DS_Store

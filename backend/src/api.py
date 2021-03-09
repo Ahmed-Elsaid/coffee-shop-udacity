@@ -1,4 +1,5 @@
 import os
+import sys
 from flask import Flask, request, jsonify, abort
 from sqlalchemy import exc
 import json
@@ -12,9 +13,7 @@ setup_db(app)
 CORS(app)
 
 
-@app.route('/')
-def index():
-    return 'Welcome to Coffee-Shop App'
+
 
 
 '''
@@ -22,10 +21,13 @@ def index():
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
 !! NOTE THIS MUST BE UNCOMMENTED ON FIRST RUN
 '''
-db_drop_and_create_all()
+# db_drop_and_create_all()
 
 ## ROUTES
 
+@app.route('/')
+def index():
+    return 'Welcome to Coffee-Shop App'
 
 '''
 @TODO implement endpoint
@@ -35,7 +37,15 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
-
+@app.route('/drinks')
+def get_all_drinks():
+    drinks = Drink.query.all()
+    if len(drinks) == 0:
+        abort(404)
+    return jsonify({
+        "success":True,
+        "drinks":[drink.short() for drink in drinks]
+    })
 
 '''
 @TODO implement endpoint
@@ -45,7 +55,15 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
-
+@app.route('/drinks-detail')
+def get_drinks_detail():
+    drinks = Drink.query.all()
+    if len(drinks) == 0:
+        abort(404)
+    return jsonify({
+        "success":True,
+        "drinks":[drink.long() for drink in drinks]
+    })
 
 '''
 @TODO implement endpoint
@@ -56,6 +74,21 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks', methods=['POST'])
+def create_drink():
+    data = request.get_json()
+    title = data['title']
+    recipe = json.dumps(data['recipe'])
+    try:
+        drink = Drink(title=title, recipe=recipe)
+        drink.insert()
+        return jsonify({
+            "success":True,
+            "message":"Drink has been created",
+            "data":drink.short()
+        })
+    except:
+        abort(400)
 
 
 '''
@@ -69,6 +102,27 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks/<int:drink_id>', methods=['PATCH'])
+def update_drink(drink_id):
+    data = request.get_json()
+    title = data.get('title', None)
+    recipe = data.get('recipe', None)
+    try:
+        if drink_id is None: 
+            abort(404)
+        drink = Drink.query.get(drink_id)
+        if drink is None:
+            abort(404)
+        drink.title = title
+        drink.recipe = json.dumps(recipe)
+        drink.update()
+        return jsonify({
+            "success":True,
+            "drinks":drink.long()
+        })
+    except:
+        abort(404)
+        
 
 
 '''
@@ -81,7 +135,21 @@ db_drop_and_create_all()
     returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
         or appropriate status code indicating reason for failure
 '''
-
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
+def delete_drink(drink_id):
+    try:
+        if drink_id is None:
+            abort(404)
+        drink = Drink.query.get(drink_id)
+        if drink is None:
+            abort(404)
+        drink.delete()
+        return jsonify({
+            "success":True,
+            "deleted":drink.id
+        })
+    except:
+        abort(404)
 
 ## Error Handling
 '''
