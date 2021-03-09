@@ -1,11 +1,14 @@
 import os
 from sqlalchemy import Column, String, Integer
+from sqlalchemy.dialects.postgresql import ARRAY
 from flask_sqlalchemy import SQLAlchemy
 import json
 
-database_filename = "database.db"
-project_dir = os.path.dirname(os.path.abspath(__file__))
-database_path = "sqlite:///{}".format(os.path.join(project_dir, database_filename))
+# database_filename = "database.db"
+# project_dir = os.path.dirname(os.path.abspath(__file__))
+# database_path = "sqlite:///{}".format(os.path.join(project_dir, database_filename))
+database_filename = "coffee"
+database_path = "postgresql:///{}".format(database_filename)
 
 db = SQLAlchemy()
 
@@ -26,6 +29,7 @@ db_drop_and_create_all()
     !!NOTE you can change the database_filename variable to have multiple verisons of a database
 '''
 def db_drop_and_create_all():
+    print('create running')
     db.drop_all()
     db.create_all()
 
@@ -35,12 +39,13 @@ a persistent drink entity, extends the base SQLAlchemy Model
 '''
 class Drink(db.Model):
     # Autoincrementing, unique primary key
-    id = Column(Integer().with_variant(Integer, "sqlite"), primary_key=True)
+    # id = Column(Integer().with_variant(Integer, "sqlite"), primary_key=True)
+    id = Column(Integer, primary_key=True)
     # String Title
     title = Column(String(80), unique=True)
     # the ingredients blob - this stores a lazy json blob
     # the required datatype is [{'color': string, 'name':string, 'parts':number}]
-    recipe =  Column(String(180), nullable=False)
+    recipe =  Column(ARRAY(db.String(), nullable=False)
 
     '''
     short()

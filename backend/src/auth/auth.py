@@ -5,9 +5,9 @@ from jose import jwt
 from urllib.request import urlopen
 
 
-AUTH0_DOMAIN = 'udacity-fsnd.auth0.com'
+AUTH0_DOMAIN = 'ahm90.us.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = 'dev'
+API_AUDIENCE = 'coffee-shop'
 
 ## AuthError Exception
 '''
@@ -31,7 +31,23 @@ class AuthError(Exception):
     return the token part of the header
 '''
 def get_token_auth_header():
-   raise Exception('Not Implemented')
+    auth_token = request.headers['authorization'].split()
+    
+    if len(auth_token) != 2:
+        raise AuthError({
+            "error":"invalid header",
+            "description":"Autherization Malformed"
+        },401)
+    
+    if 'Bearer' not in auth_token:
+        raise AuthError({
+            "error":"invalid header",
+            "description":"Autherization Malformed"
+        },401)
+    
+    return auth_token[1]
+
+
 
 '''
 @TODO implement check_permissions(permission, payload) method
@@ -45,7 +61,17 @@ def get_token_auth_header():
     return true otherwise
 '''
 def check_permissions(permission, payload):
-    raise Exception('Not Implemented')
+    if 'permissions' not in payload:
+        raise AuthError({
+            "error":"invalid header",
+            "description":"Autherization Malformed"
+        },401)
+    if permission not in payload['permissions']:
+        raise AuthError({
+            "error":"Not Authorized",
+            "description":"You're Not Authorized to handle that request"
+        },401)
+    return True
 
 '''
 @TODO implement verify_decode_jwt(token) method
@@ -61,8 +87,38 @@ def check_permissions(permission, payload):
     !!NOTE urlopen has a common certificate error described here: https://stackoverflow.com/questions/50236117/scraping-ssl-certificate-verify-failed-error-for-http-en-wikipedia-org
 '''
 def verify_decode_jwt(token):
-    raise Exception('Not Implemented')
+    rsa_key = None
+    json_url = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
+    jwks = json.loads(json_url.read())
+    unverified_header = jwt.get_unverified_header(token)
+    if 'kid' not in unverified_header:
+        raise AuthError({
+        "error":"invalid header",
+        "description":"Autherization Malformed"
+    },401)
+    for key in jwks['keys']:
+        if key['kid'] == unverified_header['kid']:
+            rsa_key = {
+                "kty":key['kty'],
+                "kid":key['kid'],
+                "use":key['use'],
+                "n":key['n'],
+                "e":key['e']
+            }
+    if rsa_key is None:
+        raise AuthError({
+            "error":"invalid header",
+            "description":"Autherization Malformed"
+        },401)
 
+    payload = jwt.decode(
+        token,
+        rsa_key,
+        algorithms=ALGORITHMS,
+        audience=API_AUDIENCE,
+        issuer=f'https://{AUTH0_DOMAIN}/'
+    )
+    return payload
 '''
 @TODO implement @requires_auth(permission) decorator method
     @INPUTS
