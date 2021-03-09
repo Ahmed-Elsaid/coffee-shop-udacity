@@ -13,9 +13,6 @@ setup_db(app)
 CORS(app)
 
 
-
-
-
 '''
 @TODO uncomment the following line to initialize the datbase
 !! NOTE THIS WILL DROP ALL RECORDS AND START YOUR DB FROM SCRATCH
@@ -110,9 +107,11 @@ def update_drink(drink_id):
     data = request.get_json()
     title = data.get('title', None)
     recipe = data.get('recipe', None)
+    if data in None:
+        abort(401, description='the provided data isn\'t correct')
     try:
         if drink_id is None: 
-            abort(404)
+            abort(422)
         drink = Drink.query.get(drink_id)
         if drink is None:
             abort(404)
@@ -124,10 +123,8 @@ def update_drink(drink_id):
             "drinks":drink.long()
         })
     except:
-        abort(404)
+        abort(404, description='The id isn\'t correct, please provide a correct one')
         
-
-
 '''
 @TODO implement endpoint
     DELETE /drinks/<id>
@@ -143,7 +140,7 @@ def update_drink(drink_id):
 def delete_drink(drink_id):
     try:
         if drink_id is None:
-            abort(404)
+            abort(422)
         drink = Drink.query.get(drink_id)
         if drink is None:
             abort(404)
@@ -153,7 +150,7 @@ def delete_drink(drink_id):
             "deleted":drink.id
         })
     except:
-        abort(404)
+        abort(404, description='The id isn\'t correct, please provide a correct one')
 
 ## Error Handling
 '''
@@ -177,14 +174,37 @@ def unprocessable(error):
                     }), 404
 
 '''
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "success":False,
+        "error":404,
+        "message":error.__dict__['description'] if error.__dict__.get('description') else 'Resource Not Found, please try again!!'
+    }), 404
 
-'''
-@TODO implement error handler for 404
-    error handler should conform to general task above 
-'''
+@app.errorhandler(401)
+def bad_request(error):
+    return jsonify({
+        "success":False,
+        "error":401,
+        "message":error.__dict__['description'] if error.__dict__.get('description') else 'Bad Request, Please Try again!!'
+    }), 400
+
+
+@app.errorhandler(405)
+def bad_request(error):
+    return jsonify({
+        "success":False,
+        "error":405,
+        "message":"Methods Not Allowed"
+    }), 405
 
 
 '''
 @TODO implement error handler for AuthError
     error handler should conform to general task above 
 '''
+@app.errorhandler(Exception)
+def exception_error(e):
+    error = e.__dict__
+    return (f"{error['error']['error']}: {error['error']['description']}", error['status_code'])
