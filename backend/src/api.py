@@ -36,13 +36,16 @@ def index():
 '''
 @app.route('/drinks')
 def get_all_drinks():
-    drinks = Drink.query.all()
-    if len(drinks) == 0:
-        abort(404)
-    return jsonify({
-        "success":True,
-        "drinks":[drink.short() for drink in drinks]
-    })
+    try:
+        drinks = Drink.query.all()
+        if len(drinks) == 0:
+            abort(404)
+        return jsonify({
+            "success":True,
+            "drinks":[drink.short() for drink in drinks]
+        })
+    except:
+        abort(404, description='No Drinks Found')
 
 '''
 @TODO implement endpoint
@@ -74,7 +77,7 @@ def get_drinks_detail(payload):
 '''
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def create_drink():
+def create_drink(payload):
     data = request.get_json()
     title = data['title']
     recipe = json.dumps(data['recipe'])
@@ -103,11 +106,11 @@ def create_drink():
 '''
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
-def update_drink(drink_id):
+def update_drink(payload, drink_id):
     data = request.get_json()
     title = data.get('title', None)
     recipe = data.get('recipe', None)
-    if data in None:
+    if data is None:
         abort(401, description='the provided data isn\'t correct')
     try:
         if drink_id is None: 
@@ -115,8 +118,8 @@ def update_drink(drink_id):
         drink = Drink.query.get(drink_id)
         if drink is None:
             abort(404)
-        drink.title = title
-        drink.recipe = json.dumps(recipe)
+        if title: drink.title = title
+        if recipe: drink.recipe = json.dumps(recipe)
         drink.update()
         return jsonify({
             "success":True,
@@ -137,7 +140,7 @@ def update_drink(drink_id):
 '''
 @app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
-def delete_drink(drink_id):
+def delete_drink(payload, drink_id):
     try:
         if drink_id is None:
             abort(422)
@@ -207,4 +210,15 @@ def bad_request(error):
 @app.errorhandler(Exception)
 def exception_error(e):
     error = e.__dict__
-    return (f"{error['error']['error']}: {error['error']['description']}", error['status_code'])
+    if error:
+        return jsonify({
+            "success":False,
+            "error":error.get('status_code'),
+            "message": f"{error.get('error')['error']}: {error.get('error')['description']}"
+        }), error.get('status_code')
+    else:
+        return jsonify({
+            "success":False,
+            "error":500,
+            "message":"Internal Server Error"
+        }), 500

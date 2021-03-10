@@ -31,8 +31,12 @@ class AuthError(Exception):
     return the token part of the header
 '''
 def get_token_auth_header():
+    if 'authorization' not in request.headers : 
+        raise AuthError({
+            "error":"invalid header",
+            "description":"Not Authorized"
+        },401)
     auth_token = request.headers['authorization'].split()
-    
     if len(auth_token) != 2:
         raise AuthError({
             "error":"invalid header",
@@ -118,24 +122,24 @@ def verify_decode_jwt(token):
 
         except jwt.ExpiredSignatureError:
             raise AuthError({
-                'code': 'token_expired',
+                'error': 'token_expired',
                 'description': 'Token expired.'
             }, 401)
 
         except jwt.JWTClaimsError:
             raise AuthError({
-                'code': 'invalid_claims',
+                'error': 'invalid_claims',
                 'description': 'Incorrect claims. Please, check the audience and issuer.'
             }, 401)
         except Exception:
             raise AuthError({
-                'code': 'invalid_header',
+                'error': 'invalid_header',
                 'description': 'Unable to parse authentication token.'
             }, 400)
     raise AuthError({
-            'code': 'invalid_header',
+            'error': 'invalid_header',
             'description': 'Unable to find the appropriate key.'
-    })
+    },401)
 '''
 @TODO implement @requires_auth(permission) decorator method
     @INPUTS
@@ -154,6 +158,5 @@ def requires_auth(permission=''):
             payload = verify_decode_jwt(token)
             check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
-
         return wrapper
     return requires_auth_decorator
