@@ -210,7 +210,7 @@ def bad_request(error):
 @app.errorhandler(Exception)
 def exception_error(e):
     error = e.__dict__
-    if error:
+    if 'error' in error:
         return jsonify({
             "success":False,
             "error":error.get('status_code'),
